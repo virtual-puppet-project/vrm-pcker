@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://dntlt8g1j51lx"]
+
+[ext_resource type="Script" path="res://standalone_runner.gd" id="1_12x5d"]
+[ext_resource type="PackedScene" uid="uid://ckwwpv7hf8lxf" path="res://addons/vrm-pcker/gui.tscn" id="1_gpp0c"]
+
+[node name="StandaloneRunner" type="CanvasLayer"]
+script = ExtResource("1_12x5d")
+
+[node name="Gui" parent="." instance=ExtResource("1_gpp0c")]

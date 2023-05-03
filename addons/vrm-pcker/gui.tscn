@@ -1,0 +1,68 @@
+[gd_scene load_steps=2 format=3 uid="uid://ckwwpv7hf8lxf"]
+
+[ext_resource type="Script" path="res://addons/vrm-pcker/gui.gd" id="1_kkuhi"]
+
+[node name="Gui" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 200)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_kkuhi")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HFlowContainer" type="HBoxContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Pack" type="Button" parent="ScrollContainer/VBoxContainer/HFlowContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+disabled = true
+text = "Pack!"
+
+[node name="Status" type="RichTextLabel" parent="ScrollContainer/VBoxContainer/HFlowContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 2
+selection_enabled = true
+
+[node name="Reset" type="Button" parent="ScrollContainer/VBoxContainer/HFlowContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Reset"
+
+[node name="HSeparator" type="HSeparator" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Model" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/VBoxContainer/VBoxContainer/Model"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Model"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ScrollContainer/VBoxContainer/VBoxContainer/Model"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Model" type="LineEdit" parent="ScrollContainer/VBoxContainer/VBoxContainer/Model/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SelectModel" type="Button" parent="ScrollContainer/VBoxContainer/VBoxContainer/Model/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Select"
