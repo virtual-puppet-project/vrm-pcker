@@ -27,6 +27,28 @@ func _ready() -> void:
 		if not _valid_path(path):
 			return
 		
+		await get_tree().process_frame
+		
+		var confirm_dialog := ConfirmationDialog.new()
+		confirm_dialog.dialog_text = "pck: %s\nModel: %s" % [path, _model.text]
+		confirm_dialog.dialog_autowrap = true
+		
+		confirm_dialog.confirmed.connect(func() -> void:
+			confirm_dialog.close_requested.emit(true)
+		)
+		confirm_dialog.canceled.connect(func() -> void:
+			confirm_dialog.close_requested.emit(false)
+		)
+		confirm_dialog.close_requested.connect(func(_choice: bool = false) -> void:
+			confirm_dialog.queue_free()
+		)
+		add_child(confirm_dialog)
+		confirm_dialog.popup_centered(DisplayServer.screen_get_size() * 0.2)
+		
+		var should_continue: bool = await confirm_dialog.close_requested
+		if not should_continue:
+			return
+		
 		var err: String = Packer.pack(editor_fs, _model.text, path)
 		if err != Packer.SUCCESS:
 			_status.text = err

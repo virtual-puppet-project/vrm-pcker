@@ -4,6 +4,7 @@ const VERSION := "1.0.0"
 const SUCCESS := "Success"
 
 const WORK_DIR := "res://__work/"
+const PCK_DEST_DIR := "res://packer-import/"
 const MODEL_RENAME_PATH := "%s/model.vrm" % WORK_DIR
 const DESCRIPTOR_PATH := "%s/descriptor.json" % WORK_DIR
 const DESCRIPTOR_JSON := {
@@ -124,7 +125,7 @@ static func pack(editor_fs: EditorFileSystem, model_path: String, save_path: Str
 	
 	var file: String = dir.get_next()
 	while not file.is_empty():
-		if packer.add_file("res://imported-models/%s" % file, "%s/%s" % [WORK_DIR, file]) != OK:
+		if packer.add_file("%s/%s" % [PCK_DEST_DIR, file], "%s/%s" % [WORK_DIR, file]) != OK:
 			dir.list_dir_end()
 			return "Unable to add %s to pck" % file
 		
