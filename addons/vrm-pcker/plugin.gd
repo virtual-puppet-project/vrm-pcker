@@ -20,7 +20,7 @@ func _enter_tree() -> void:
 		gui.queue_free()
 		return
 	gui.set_script(gui_script)
-	gui.editor_fs = editor.get_resource_filesystem()
+	gui.editor = editor
 	
 	add_control_to_bottom_panel(gui, PLUGIN_NAME)
 	

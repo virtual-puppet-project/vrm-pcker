@@ -2,6 +2,7 @@ extends Object
 
 const VERSION := "1.0.0"
 const SUCCESS := "Success"
+const TRY_AGAIN := "Try again"
 
 const WORK_DIR := "res://__work/"
 const MODEL_RENAME_PATH := "%s/model.vrm" % WORK_DIR
@@ -80,11 +81,35 @@ static func _remove_dir_recursive(
 
 	return OK
 
+static func _auto_press_new_inherited(dialog: ConfirmationDialog) -> bool:
+	var ok: Button = dialog.get_ok_button()
+	var cancel: Button = dialog.get_cancel_button()
+	
+	var target: Button = null
+	for i in dialog.get_children(true)[2].get_children():
+		if not i is Button:
+			continue
+		if i == ok or i == cancel:
+			continue
+		target = i
+		break
+	
+	if target == null:
+		return false
+	
+	target.pressed.emit()
+	return true
+
 #-----------------------------------------------------------------------------#
 # Public functions
 #-----------------------------------------------------------------------------#
 
-static func pack(editor_fs: EditorFileSystem, model_path: String, save_path: String) -> String:
+static func pack(editor: EditorInterface, model_path: String, save_path: String, trying_again: bool = false) -> String:
+	if not editor.get_open_scenes().is_empty():
+		return "Please close all open scenes before packing"
+	
+	var editor_fs: EditorFileSystem = editor.get_resource_filesystem()
+	
 	save_path = "%s.pck" % save_path.rstrip(save_path.get_extension()).rstrip(".")
 	
 	if DirAccess.dir_exists_absolute(WORK_DIR):
@@ -105,17 +130,41 @@ static func pack(editor_fs: EditorFileSystem, model_path: String, save_path: Str
 	
 	editor_fs.scan()
 	editor_fs.reimport_files([MODEL_RENAME_PATH])
-
-	var loader := preload("res://addons/vrm/import_vrm.gd").new()
-	var work_model: Node3D = loader._import_scene(MODEL_RENAME_PATH, EditorSceneFormatImporter.IMPORT_SCENE, {})
-	if work_model == null:
-		return "Unable to load work model at path %s" % MODEL_RENAME_PATH
+	
+	var auto_press := func(dialog: ConfirmationDialog) -> void:
+		if dialog.visible:
+			if not _auto_press_new_inherited(dialog):
+				printerr("Unable to automatically create new scene")
+	
+	for i in editor.get_base_control().get_children():
+		if i is ConfirmationDialog:
+			i.visibility_changed.connect(auto_press.bind(i))
+	
+	editor.open_scene_from_path(MODEL_RENAME_PATH)
+	
+	for i in editor.get_base_control().get_children():
+		if i is ConfirmationDialog:
+			i.visibility_changed.disconnect(auto_press)
+	
+	# TODO Godot will not properly import the first time around for some reason
+	var new_scene: Node = editor.get_edited_scene_root()
+	if new_scene == null:
+		if trying_again:
+			return "Edited scene root is null, aborting"
+		else:
+			return TRY_AGAIN
+	
+	editor.save_scene_as(SCENE_PATH)
+	
+	var saved_scene: Resource = load(SCENE_PATH)
+	if saved_scene == null:
+		return "Unable to load saved scene from %s" % SCENE_PATH
 
 	var pck_scene := PackedScene.new()
-	if pck_scene.pack(work_model) != OK:
+	if pck_scene.pack(saved_scene.instantiate()) != OK:
 		return "Unable to pack model %s" % model_path
 
-	if ResourceSaver.save(pck_scene, SCENE_PATH) != OK:
+	if ResourceSaver.save(pck_scene, SCENE_PATH, ResourceSaver.FLAG_BUNDLE_RESOURCES) != OK:
 		return "Unable to save PackedScene at path %s" % SCENE_PATH
 	
 	var packer := PCKPacker.new()
