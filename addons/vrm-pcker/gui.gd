@@ -1,7 +1,5 @@
 extends PanelContainer
 
-const Packer := preload("res://addons/vrm-pcker/packer.gd")
-
 const WORK_DIR := "res://__work"
 
 const DESCRIPTOR_JSON := {
@@ -48,6 +46,9 @@ func _ready() -> void:
 		var should_continue: bool = await confirm_dialog.close_requested
 		if not should_continue:
 			return
+		
+		# Done like this for hot reloading
+		var Packer = ResourceLoader.load("res://addons/vrm-pcker/packer.gd", "", ResourceLoader.CACHE_MODE_IGNORE)
 		
 		var err: String = Packer.pack(editor_fs, _model.text, path)
 		if err != Packer.SUCCESS:

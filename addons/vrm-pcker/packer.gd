@@ -4,13 +4,19 @@ const VERSION := "1.0.0"
 const SUCCESS := "Success"
 
 const WORK_DIR := "res://__work/"
-const PCK_DEST_DIR := "res://packer-import/"
 const MODEL_RENAME_PATH := "%s/model.vrm" % WORK_DIR
 const DESCRIPTOR_PATH := "%s/descriptor.json" % WORK_DIR
+const SCENE_PATH := "%s/model.tscn" % WORK_DIR
+
+const PCK_DEST_DIR := "res://packer-import/"
+const PCK_MODEL_PATH := "%s/model.vrm" % PCK_DEST_DIR
+const PCK_DESCRIPTOR_PATH := "%s/descriptor.json" % PCK_DEST_DIR
 const DESCRIPTOR_JSON := {
 	"name": "",
-	"descriptor_version": VERSION
+	"descriptor_version": VERSION,
+	"files": []
 }
+const PCK_SCENE_PATH := "%s/model.tscn" % PCK_DEST_DIR
 
 #-----------------------------------------------------------------------------#
 # Builtin functions
@@ -99,17 +105,18 @@ static func pack(editor_fs: EditorFileSystem, model_path: String, save_path: Str
 	
 	editor_fs.scan()
 	editor_fs.reimport_files([MODEL_RENAME_PATH])
-	
-	var descriptor := DESCRIPTOR_JSON.duplicate()
-	descriptor.name = model_path.get_file()
-	
-	var descriptor_file := FileAccess.open(DESCRIPTOR_PATH, FileAccess.WRITE)
-	if descriptor_file == null:
-		return "Unable to write file descriptor at %s" % DESCRIPTOR_PATH
-	
-	descriptor_file.store_string(JSON.stringify(descriptor))
-	
-	descriptor_file.close()
+
+	var loader := preload("res://addons/vrm/import_vrm.gd").new()
+	var work_model: Node3D = loader._import_scene(MODEL_RENAME_PATH, EditorSceneFormatImporter.IMPORT_SCENE, {})
+	if work_model == null:
+		return "Unable to load work model at path %s" % MODEL_RENAME_PATH
+
+	var pck_scene := PackedScene.new()
+	if pck_scene.pack(work_model) != OK:
+		return "Unable to pack model %s" % model_path
+
+	if ResourceSaver.save(pck_scene, SCENE_PATH) != OK:
+		return "Unable to save PackedScene at path %s" % SCENE_PATH
 	
 	var packer := PCKPacker.new()
 	if packer.pck_start(save_path) != OK:
@@ -123,15 +130,34 @@ static func pack(editor_fs: EditorFileSystem, model_path: String, save_path: Str
 	dir.include_navigational = false
 	dir.list_dir_begin()
 	
+	var descriptor := DESCRIPTOR_JSON.duplicate(true)
+	descriptor.name = model_path.get_file()
+	
 	var file: String = dir.get_next()
 	while not file.is_empty():
-		if packer.add_file("%s/%s" % [PCK_DEST_DIR, file], "%s/%s" % [WORK_DIR, file]) != OK:
+		var pck_path := "%s/%s" % [PCK_DEST_DIR, file]
+		if packer.add_file(pck_path, "%s/%s" % [WORK_DIR, file]) != OK:
 			dir.list_dir_end()
 			return "Unable to add %s to pck" % file
+		
+		descriptor.files.append(pck_path)
 		
 		file = dir.get_next()
 	
 	dir.list_dir_end()
+	
+	descriptor.files.append(PCK_DESCRIPTOR_PATH)
+	
+	var descriptor_file := FileAccess.open(DESCRIPTOR_PATH, FileAccess.WRITE)
+	if descriptor_file == null:
+		return "Unable to write file descriptor at %s" % DESCRIPTOR_PATH
+	
+	descriptor_file.store_string(JSON.stringify(descriptor))
+	
+	descriptor_file.close()
+	
+	if packer.add_file(PCK_DESCRIPTOR_PATH, DESCRIPTOR_PATH) != OK:
+		return "Unable to add descriptor.json to pck"
 	
 	if packer.flush(true) != OK:
 		return "Unable to create pck"
